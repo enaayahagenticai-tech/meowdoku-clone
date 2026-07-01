@@ -43,6 +43,30 @@ body {
 }
 .cell:active { transform: scale(0.95); }
 
+@keyframes cellPop {
+  0% { transform: scale(0.4); opacity: 0; }
+  60% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes cellMark {
+  0% { transform: scale(0.5) rotate(-15deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+@keyframes cellFade {
+  0% { transform: scale(1.06); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes shake {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(3px); }
+  30%, 50%, 70% { transform: translateX(-5px); }
+  40%, 60% { transform: translateX(5px); }
+}
+.cell-cat { animation: cellPop .22s ease; }
+.cell-xmark { animation: cellMark .15s ease; }
+.cell-empty { animation: cellFade .15s ease; }
+.cell-wrong { animation: shake .4s ease; background-color: rgba(239,68,68,0.35) !important; }
+
 .hearts .heart { font-size: 24px; transition: opacity .2s; }
 .hearts .lost { opacity: 0.2; }
 
@@ -58,4 +82,57 @@ body {
   font-weight: 700;
   color: #9333ea;
   cursor: pointer;
+}
+.level-btn.locked { opacity: 0.35; filter: grayscale(1); cursor: not-allowed; }
+.level-btn.level-current { box-shadow: 0 0 0 2px #a855f7; }
+
+.win-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 16px;
+}
+.win-card {
+  background: white;
+  border-radius: 20px;
+  padding: 32px;
+  max-width: 380px;
+  width: 100%;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  animation: winPop .4s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes winPop {
+  0% { transform: scale(0.4) rotate(-8deg); opacity: 0; }
+  60% { transform: scale(1.08) rotate(3deg); }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+.win-emoji {
+  display: inline-block;
+  font-size: 72px;
+  margin-bottom: 16px;
+  animation: trophyBounce 1s ease-in-out infinite;
+}
+@keyframes trophyBounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  30% { transform: translateY(-14px) scale(1.1); }
+  50% { transform: translateY(0) scale(1); }
+  70% { transform: translateY(-6px); }
+}
+.confetti-wrap { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.confetti-piece {
+  position: absolute;
+  top: -20px;
+  width: 8px;
+  height: 14px;
+  animation: confettiFall 1.4s ease-in forwards;
+}
+@keyframes confettiFall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(260px) rotate(360deg); opacity: 0; }
 }
