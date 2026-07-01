@@ -17,7 +17,7 @@ export interface AppState {
   catSkin: string;
   catSkinIndex: number;
   soundOn: boolean;
-  stats: { played: number; wins: number; bestTime: number | null };
+  stats: { played: number; wins: number; bestTime: number | null; streak: number; bestStreak: number; bestDailyTime: number | null };
 }
 
 export const initialState: AppState = {
@@ -28,7 +28,7 @@ export const initialState: AppState = {
   catSkin: CAT_EMOJIS[0],
   catSkinIndex: 0,
   soundOn: true,
-  stats: { played: 0, wins: 0, bestTime: null },
+  stats: { played: 0, wins: 0, bestTime: null, streak: 0, bestStreak: 0, bestDailyTime: null },
 };
 
 export function loadState(): AppState {
@@ -50,16 +50,21 @@ export function rotateSkin(s: AppState): AppState {
   return { ...s, catSkinIndex: next, catSkin: CAT_EMOJIS[next] };
 }
 
-// Records the outcome of a level attempt: always counts a play, and on a
-// win, unlocks the next level sequentially and bumps the high score.
-export function recordLevelResult(s: AppState, level: number, won: boolean): AppState {
+export function recordLevelResult(s: AppState, level: number, won: boolean, elapsedMs?: number | null): AppState {
+  const nextStats = {
+    ...s.stats,
+    played: s.stats.played + 1,
+    wins: won ? s.stats.wins + 1 : s.stats.wins,
+    streak: won ? s.stats.streak + 1 : 0,
+    bestStreak: won ? Math.max(s.stats.bestStreak, s.stats.streak + 1) : s.stats.bestStreak,
+    bestTime: won && elapsedMs != null ? (s.stats.bestTime == null ? elapsedMs : Math.min(s.stats.bestTime, elapsedMs)) : s.stats.bestTime,
+  };
+  if (s.mode === 'daily' && won && elapsedMs != null) {
+    nextStats.bestDailyTime = s.stats.bestDailyTime == null ? elapsedMs : Math.min(s.stats.bestDailyTime, elapsedMs);
+  }
   return {
     ...s,
-    stats: {
-      ...s.stats,
-      played: s.stats.played + 1,
-      wins: won ? s.stats.wins + 1 : s.stats.wins,
-    },
+    stats: nextStats,
     highScore: won ? Math.max(s.highScore, level) : s.highScore,
     unlockedLevel: won
       ? Math.min(TOTAL_LEVELS, Math.max(s.unlockedLevel, level + 1))
@@ -71,4 +76,23 @@ export function recordLevelResult(s: AppState, level: number, won: boolean): App
 export function difficultyForLevel(level: number, tiers: Difficulty[]): Difficulty {
   const tier = Math.floor((level - 1) / 5) % tiers.length;
   return tiers[tier];
+}
+
+export function dailyKey() {
+  const d = new Date();
+  return `meowdoku-daily-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+}
+
+export function loadDailyState() {
+  try {
+    const saved = localStorage.getItem(dailyKey());
+    if (saved) return JSON.parse(saved);
+  } catch {}
+  return null;
+}
+
+export function saveDailyState(payload: { level: number; won: boolean; elapsedMs: number | null }) {
+  try {
+    localStorage.setItem(dailyKey(), JSON.stringify({ ...payload, updatedAt: Date.now() }));
+  } catch {}
 }

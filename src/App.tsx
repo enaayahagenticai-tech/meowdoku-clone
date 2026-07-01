@@ -6,6 +6,7 @@ import {
   loadState,
   recordLevelResult,
   rotateSkin,
+  saveDailyState,
   saveState,
   type AppState,
 } from './store/gameStore';
@@ -16,7 +17,7 @@ import './global.css';
 import './App.css';
 
 type Mode = 'daily' | 'play';
-type Screen = 'menu' | 'play' | 'levels' | 'shop' | 'stats';
+type Screen = 'menu' | 'play' | 'levels' | 'shop' | 'stats' | 'daily-result';
 type CellValue = 'empty' | 'x-mark' | 'cat';
 
 const DIFFICULTY_TIERS: Difficulty[] = ['normal', 'hard', 'ultra'];
@@ -30,7 +31,6 @@ function makeBoard(diff: Difficulty) {
   const cellsByRegion = Array.from({length:10}, () => [] as number[][]);
   for (let r=0;r<9;r++) for(let c=0;c<9;c++) cellsByRegion[GRID_REGIONS[r][c]].push([r,c]);
   const regionList = Array.from({length:9}, (_,i) => ({id:i+1, cells:cellsByRegion[i+1], color: COLORS[i%COLORS.length]}));
-  // simple solver identical to generator layout
   function ok(sol: number[][], row: number, col: number) {
     for (let j=0;j<9;j++) if (sol[row][j]) return false;
     for (let i=0;i<9;i++) if (sol[i][col]) return false;
@@ -53,6 +53,13 @@ function makeBoard(diff: Difficulty) {
   return { solution, puzzle, regions: regionList, colors: regionList.map(x=>x.color), grid: GRID_REGIONS, difficulty: diff };
 }
 
+function formatTime(ms?: number | null) {
+  if (ms == null) return '--';
+  const s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60);
+  return `${m}:${(s % 60).toString().padStart(2, '0')}`;
+}
+
 function App() {
   const [state, setState] = useState<AppState>(() => loadState());
   const [screen, setScreen] = useState<Screen>('menu');
@@ -60,7 +67,9 @@ function App() {
   const taps = useRef<{row:number,col:number,t:number}[]>([]);
   const wrongIdRef = useRef(0);
 
-  useEffect(() => { saveState(state); }, [state]);
+  useEffect(() => {
+    saveState(state);
+  }, [state]);
 
   const [board, setBoard] = useState(() => makeBoard('normal'));
   const [boardState, setBoardState] = useState<CellValue[][]>([]);
@@ -69,20 +78,41 @@ function App() {
   const [level, setLevel] = useState(1);
   const [mode, setMode] = useState<Mode>('play');
   const [wrongCell, setWrongCell] = useState<{row:number,col:number} | null>(null);
+  const [elapsed, setElapsed] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startTsRef = useRef(0);
+  const winUnlockedRef = useRef(false);
 
   const tap = (fn: () => void) => () => { if (state.soundOn) SoundManager.play('click'); fn(); };
+
+  const clearTimer = () => {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+  };
+  const startTimer = () => {
+    clearTimer();
+    startTsRef.current = Date.now() - elapsed;
+    timerRef.current = setInterval(() => setElapsed(Date.now() - startTsRef.current), 250);
+  };
 
   const applyBoard = (levelNum: number, m: Mode) => {
     const diff = m === 'play' ? difficultyForLevel(levelNum, DIFFICULTY_TIERS) : 'normal';
     const b = makeBoard(diff);
     const initBoardState = b.puzzle.map(r => r.map(v => v===1 ? 'cat' : 'empty')) as CellValue[][];
     setBoard(b); setBoardState(initBoardState); setHearts(3); setSolved(false);
-    setLevel(levelNum); setMode(m); setWrongCell(null);
+    setLevel(levelNum); setMode(m); setWrongCell(null); setElapsed(0); winUnlockedRef.current = false;
+    startTimer();
   };
 
   const openBoard = (m: Mode, n?: number) => {
-    applyBoard(n ?? (m === 'play' ? state.unlockedLevel : state.level), m);
+    const initialLevel = m === 'daily' ? 1 : (n ?? (m === 'play' ? state.unlockedLevel : state.level));
+    applyBoard(initialLevel, m);
     setScreen('play');
+  };
+
+  const showDailyResult = () => {
+    const won = solved && hearts > 0;
+    saveDailyState({ level, won, elapsedMs: won ? elapsed : null });
+    setScreen('daily-result');
   };
 
   const isValid = (bs: CellValue[][], brd: any, row:number, col:number) => {
@@ -91,8 +121,7 @@ function App() {
     for (let i=0;i<9;i++) if (bs[i][col]==='cat') return false;
     for (let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){
       if (!dr && !dc) continue;
-      const nr=row+dr,nc=col+dc;
-      if (nr>=0&&nr<9&&nc>=0&&nc<9&&bs[nr][nc]==='cat') return false;
+      const nr=row+dr,nc=col+dc; if (nr>=0&&nr<9&&nc>=0&&nc<9&&bs[nr][nc]==='cat') return false;
     }
     return true;
   };
@@ -137,16 +166,25 @@ function App() {
       setSolved(true);
       SoundManager.play('win');
       haptics.win();
-      setState(s => recordLevelResult(s, level, true));
-      setTimeout(() => { setWin(true); SoundManager.play('levelComplete'); }, 250);
+      setState(s => recordLevelResult(s, level, true, elapsed));
+      if (!winUnlockedRef.current) {
+        winUnlockedRef.current = true;
+        setTimeout(() => { setWin(true); SoundManager.play('levelComplete'); clearTimer(); showDailyResult(); }, 250);
+      }
     } else if (hp <= 0) {
-      setState(s => recordLevelResult(s, level, false));
+      if (!winUnlockedRef.current) {
+        winUnlockedRef.current = true;
+        setState(s => recordLevelResult(s, level, false, elapsed));
+      }
     }
   };
 
-  const restart = () => { SoundManager.play('click'); applyBoard(level, mode); };
-  const backToMenu = () => { saveState(state); setScreen('menu'); setWin(false); };
-
+  const restart = () => {
+    if (state.soundOn) SoundManager.play('click');
+    applyBoard(level, mode);
+    startTimer();
+  };
+  const backToMenu = () => { clearTimer(); setScreen('menu'); };
   const toggleSound = () => {
     const next = !state.soundOn;
     setState(s => ({ ...s, soundOn: next }));
@@ -182,8 +220,11 @@ function App() {
         <div className="screen">
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
             <button className="btn btn-secondary" onClick={tap(backToMenu)}>← Back</button>
-            <div className="hearts" style={{display:'flex',gap:4}}>
-              {Array.from({length: 3}).map((_,i) => (<span key={i} className={`heart ${hearts<=i?'lost':''}`}>❤️</span>))}
+            <div style={{display:'flex',gap:12,alignItems:'center'}}>
+              <span style={{fontSize:12,color:'#ec4899',fontWeight:800}}>{formatTime(elapsed)}</span>
+              <div className="hearts" style={{display:'flex',gap:4}}>
+                {Array.from({length: 3}).map((_,i) => (<span key={i} className={`heart ${hearts<=i?'lost':''}`}>❤️</span>))}
+              </div>
             </div>
             <span style={{fontSize:12,color:'#6b7280',textTransform:'uppercase',fontWeight:700}}>{board.difficulty}</span>
           </div>
@@ -210,14 +251,14 @@ function App() {
               }))}
             </div>
 
-            <div style={{display:'flex',justifyContent:'space-between',padding:'8px 4px',fontSize:13,color:'#6b7280'}}>
-              <span>Cats: {boardState.flat().filter(x=>x==='cat').length}/9</span>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 4px',fontSize:13,color:'#6b7280'}}>
               <span>Level {level}</span>
+              <span>Cats: {boardState.flat().filter(x=>x==='cat').length}/9</span>
             </div>
 
             <div style={{display:'flex',gap:8,paddingTop:8}}>
               <button className="btn btn-secondary" onClick={restart} style={{flex:1}}>Restart</button>
-              <button className="btn btn-secondary" onClick={tap(()=>setScreen('menu'))} style={{flex:1}}>Menu</button>
+              <button className="btn btn-secondary" onClick={tap(backToMenu)} style={{flex:1}}>Menu</button>
             </div>
           </div>
         </div>
@@ -266,7 +307,7 @@ function App() {
               const requiredWins = i * 3 + 1;
               const unlocked = state.stats.wins >= requiredWins;
               return (
-                <button key={i} disabled={!unlocked} onClick={()=>{ if(unlocked){ setState(rotateSkin({...state, catSkinIndex:i, catSkin:CAT_EMOJIS[i]})); SoundManager.play('click'); }}} className="level-btn" style={{opacity: unlocked?1:0.35, fontSize:36}}>
+                <button key={i} disabled={!unlocked} onClick={()=>{ if(unlocked){ setState(rotateSkin({...state, catSkinIndex:i, catSkin:CAT_EMOJIS[i]})); if(state.soundOn) SoundManager.play('click'); }}} className="level-btn" style={{opacity: unlocked?1:0.35, fontSize:36}}>
                   {cat}
                 </button>
               );
@@ -288,7 +329,25 @@ function App() {
             <div style={{display:'flex',justifyContent:'space-between'}}><span>Win Rate</span><b>{state.stats.played?Math.round(state.stats.wins/state.stats.played*100)+'%':'0%'}</b></div>
             <div style={{display:'flex',justifyContent:'space-between'}}><span>Best Level</span><b>{state.highScore}</b></div>
             <div style={{display:'flex',justifyContent:'space-between'}}><span>Levels Unlocked</span><b>{state.unlockedLevel}/{TOTAL_LEVELS}</b></div>
+            <div style={{display:'flex',justifyContent:'space-between'}}><span>Win Streak</span><b>{state.stats.streak}</b></div>
+            <div style={{display:'flex',justifyContent:'space-between'}}><span>Best Streak</span><b>{state.stats.bestStreak}</b></div>
+            <div style={{display:'flex',justifyContent:'space-between'}}><span>Best Time</span><b>{formatTime(state.stats.bestTime)}</b></div>
+            <div style={{display:'flex',justifyContent:'space-between'}}><span>Best Daily</span><b>{formatTime(state.stats.bestDailyTime)}</b></div>
             <div style={{display:'flex',justifyContent:'space-between'}}><span>Current Cat</span><b style={{fontSize:32}}>{state.catSkin}</b></div>
+          </div>
+        </div>
+      )}
+
+      {screen === 'daily-result' && (
+        <div className="screen">
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:12,flex:1}}>
+            <div style={{fontSize:56}}>📅</div>
+            <h2 style={{fontSize:24,fontWeight:800,color:'#9333ea'}}>Daily Challenge</h2>
+            <div style={{display:'flex',gap:16,width:'100%'}}>
+              <div className="btn btn-secondary" style={{flex:1}}>Best: {formatTime(state.stats.bestDailyTime)}</div>
+              <div className="btn btn-secondary" style={{flex:1}}>Streak: {state.stats.streak}</div>
+            </div>
+            <button className="btn btn-primary" onClick={tap(()=>setScreen('menu'))} style={{width:'100%',padding:14}}>Menu</button>
           </div>
         </div>
       )}
@@ -307,7 +366,9 @@ function App() {
             </div>
             <div className="win-emoji">🎉</div>
             <h2 style={{fontSize:28,fontWeight:800,color:'#9333ea',marginBottom:8}}>Level Complete!</h2>
-            <p style={{color:'#6b7280',marginBottom:24}}>Great job solving the puzzle!</p>
+            <p style={{color:'#6b7280',marginBottom:24}}>
+              {mode === 'daily' ? `Time: ${formatTime(elapsed)}` : `Great job solving the puzzle!`}
+            </p>
             <button className="btn btn-primary" onClick={tap(()=>setWin(false))} style={{width:'100%',padding:14}}>Continue</button>
           </div>
         </div>
