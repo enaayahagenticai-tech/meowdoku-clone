@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gradient-to-br from-purple-50 to-pink-50 text-gray-800 antialiased;
+  }
+}
+
+@layer components {
+  .cell {
+    @apply aspect-square flex items-center justify-center border border-gray-200 rounded-sm transition-transform select-none;
+  }
+  .cell:active {
+    transform: scale(0.95);
+  }
+}
