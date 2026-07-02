@@ -1,5 +1,20 @@
 /* Meowdoku Clone app styles */
 .screen { max-width: 480px; margin: 0 auto; padding: 16px; height: 100vh; display: flex; flex-direction: column; }
+.coach {
+  background: linear-gradient(180deg,#fbf5ff,#fff);
+  border: 1px solid rgba(147,51,234,0.15);
+  color: #4c1d95;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 6px 18px rgba(147,51,234,0.08);
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 10px;
+  align-items: center;
+}
+.coach-icon { font-size: 18px; }
 .screen--static { animation: none !important; }
 
 .btn {
