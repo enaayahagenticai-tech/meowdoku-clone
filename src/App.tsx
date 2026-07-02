@@ -64,6 +64,7 @@ function App() {
   const [screen, setScreen] = useState<Screen>('menu');
   const [win, setWin] = useState(false);
   const [gameOver, setGameOver] = useState(false);
+  const [showHint, setShowHint] = useState(false);
   const [resultStars, setResultStars] = useState<0|1|2|3>(0);
   const taps = useRef<{row:number,col:number,t:number}[]>([]);
   const wrongIdRef = useRef(0);
@@ -112,6 +113,8 @@ function App() {
     const initialLevel = m === 'daily' ? 1 : (n ?? (m === 'play' ? state.unlockedLevel : state.level));
     applyBoard(initialLevel, m);
     setScreen('play');
+    // First-time players get a one-off placement hint until they place a cat.
+    setShowHint(state.stats.played === 0);
   };
 
   const showDailyResult = (finalElapsed: number) => {
@@ -182,7 +185,7 @@ function App() {
     setBoardState(next);
     setLives(hp);
 
-    if (placed) { sfx('place'); haptics.place(); }
+    if (placed) { setShowHint(false); sfx('place'); haptics.place(); }
     else if (wrongMove) {
       sfx('wrong'); haptics.wrong();
       const id = ++wrongIdRef.current;
@@ -249,6 +252,14 @@ function App() {
             </div>
             <span style={{fontSize:12,color:'#6b7280',textTransform:'uppercase',fontWeight:700}}>{board.difficulty}</span>
           </div>
+
+          {showHint && (
+            <button className="hint-banner" onClick={()=>setShowHint(false)}>
+              <span className="hint-tap">👆</span>
+              <span><b>Double-tap</b> an empty cell to place a cat · <b>single-tap</b> to mark ×</span>
+              <span className="hint-dismiss">tap to dismiss</span>
+            </button>
+          )}
 
           <div style={{background:'white',borderRadius:16,padding:8,boxShadow:'0 2px 8px rgba(0,0,0,0.06)',flex:1,display:'flex',flexDirection:'column'}}>
             <div className="board" style={{gridTemplateColumns:'repeat(9, 1fr)'}}>

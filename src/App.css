@@ -1,5 +1,6 @@
 /* Meowdoku Clone app styles */
 .screen { max-width: 480px; margin: 0 auto; padding: 16px; height: 100vh; display: flex; flex-direction: column; }
+.screen--static { animation: none !important; }
 
 .btn {
   border: none;
@@ -92,6 +93,40 @@
 .hearts .heart { font-size: 24px; transition: opacity .2s; }
 .hearts .lost { opacity: 0.2; }
 
+/* First-time onboarding hint */
+.hint-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(168,85,247,0.25);
+  border-radius: 12px;
+  background: linear-gradient(180deg,#faf5ff,#f3e8ff);
+  color: #6b21a8;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(147,51,234,0.10);
+  animation: hintIn .35s ease both, hintGlow 2.2s ease-in-out infinite .35s;
+}
+.hint-tap { font-size: 20px; animation: hintNudge 1.2s ease-in-out infinite; }
+.hint-dismiss { margin-left: auto; font-size: 10px; font-weight: 700; opacity: 0.55; white-space: nowrap; }
+@keyframes hintIn {
+  0% { transform: translateY(-8px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+@keyframes hintGlow {
+  0%, 100% { box-shadow: 0 2px 8px rgba(147,51,234,0.10); }
+  50% { box-shadow: 0 2px 14px rgba(147,51,234,0.28); }
+}
+@keyframes hintNudge {
+  0%, 100% { transform: translateY(0); }
+  40% { transform: translateY(3px); }
+}
+
 .menu-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
 .level-btn {
   aspect-ratio: 1;
@@ -116,6 +151,7 @@
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
