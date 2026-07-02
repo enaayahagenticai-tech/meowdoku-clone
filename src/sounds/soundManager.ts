@@ -1,20 +1,34 @@
 const PREFIX = '/meowdoku-clone/src/sounds/sfx/';
 const files: Record<string, string> = {
   click: `${PREFIX}click.mp3`,
-  clickTick: `${PREFIX}click-tick.mp3`,
+  back: `${PREFIX}back.mp3`,
+  toggle: `${PREFIX}toggle.mp3`,
+  flip: `${PREFIX}flip.mp3`,
   place: `${PREFIX}place.mp3`,
+  clear: `${PREFIX}clear.mp3`,
   wrong: `${PREFIX}wrong.mp3`,
+  lifeLost: `${PREFIX}lifeLost.mp3`,
   win: `${PREFIX}win.mp3`,
-  levelComplete: `${PREFIX}levelComplete.mp3`,
+  levelUp: `${PREFIX}levelUp.mp3`,
+  dailyDone: `${PREFIX}dailyDone.mp3`,
+  unlock: `${PREFIX}unlock.mp3`,
+  streak: `${PREFIX}streak.mp3`,
 };
 
 const TTS_TEXT: Record<string, string> = {
   click: 'Click.',
-  clickTick: 'Tick.',
-  place: 'Placed.',
-  wrong: 'Wrong.',
-  win: 'You win!',
-  levelComplete: 'Level complete.',
+  back: 'Back.',
+  toggle: 'Toggle.',
+  flip: 'Pop.',
+  place: 'Plink.',
+  clear: 'Shhh.',
+  wrong: 'Bloop.',
+  lifeLost: 'Thud.',
+  win: 'Great.',
+  levelUp: 'Level up.',
+  dailyDone: 'Daily complete.',
+  unlock: 'Unlocked.',
+  streak: 'Streak.',
 };
 
 const EXPLICIT: Record<string, string> = {};

@@ -105,6 +105,7 @@ function App() {
     setWin(false); setGameOver(false);
     setState(s => s.mode === m ? s : { ...s, mode: m });
     startTimer();
+    sfx('flip');
   };
 
   const openBoard = (m: Mode, n?: number) => {
@@ -125,9 +126,6 @@ function App() {
     });
   };
 
-  // Called once per round. `won` is passed in explicitly (rather than read from
-  // state) because this runs from a setTimeout closure where `solved`/`lives`
-  // would be stale.
   const finishLevel = (won: boolean, finalLives: number) => {
     if (winUnlockedRef.current) return;
     winUnlockedRef.current = true;
@@ -138,7 +136,7 @@ function App() {
     setResultStars(starCount);
     setState(s => recordLevelResult(s, level, won, finalElapsed));
     addLevelResult({ won, stars: starCount, elapsedMs: won ? finalElapsed : null, heartsLeft: finalLives });
-    sfx(won ? 'levelComplete' : 'wrong');
+    sfx(won ? 'win' : 'lifeLost');
     if (won) {
       if (mode === 'daily') showDailyResult(finalElapsed); else setWin(true);
     } else {
@@ -186,8 +184,7 @@ function App() {
       setWrongCell({ row: r, col: c });
       setTimeout(() => { if (wrongIdRef.current === id) setWrongCell(null); }, 400);
     } else {
-      // A plain toggle (x-mark or clear) — light tactile tick.
-      sfx('clickTick');
+      sfx('flip');
     }
 
     const cats = next.flat().filter(x=>x==='cat').length;
@@ -207,9 +204,9 @@ function App() {
     setWin(false);
     applyBoard(Math.min(TOTAL_LEVELS, level + 1), mode);
   };
-  const restart = () => { if (state.soundOn) SoundManager.play('click'); applyBoard(level, mode); };
-  const backToMenu = () => { clearTimer(); setScreen('menu'); };
-  const toggleSound = () => { const next = !state.soundOn; setState(s => ({ ...s, soundOn: next })); if(next) SoundManager.play('click'); };
+  const restart = () => { sfx('click'); applyBoard(level, mode); };
+  const backToMenu = () => { clearTimer(); setScreen('menu'); sfx('back'); };
+  const toggleSound = () => { const next = !state.soundOn; setState(s => ({ ...s, soundOn: next })); if(next) sfx('toggle'); };
 
   return (
     <div>
@@ -280,7 +277,7 @@ function App() {
       {screen === 'levels' && (
         <div className="screen">
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
-            <button className="btn btn-secondary" onClick={tap(()=>setScreen('menu'))}>← Back</button>
+            <button className="btn btn-secondary" onClick={tap(backToMenu)}>← Back</button>
             <h2 style={{margin:0,fontSize:20,fontWeight:800,color:'#9333ea'}}>Levels</h2>
             <div style={{width:60}}></div>
           </div>
@@ -293,7 +290,7 @@ function App() {
               const isNext = lvl === state.unlockedLevel;
               const stars = result && result.won ? Array.from({length: 3}).map((_, idx) => idx < (result.stars || 0) ? '⭐' : '☆').join('') : '';
               return (
-                <button key={lvl} disabled={locked} onClick={tap(()=>openBoard('play', lvl))} className={`level-btn ${locked ? 'locked' : ''} ${isNext ? 'level-current' : ''}`} style={{fontSize: stars ? 18 : 18, display:'flex', flexDirection:'column', gap:2}}>
+                <button key={lvl} disabled={locked} onClick={tap(()=>openBoard('play', lvl))} className={`level-btn ${locked ? 'locked' : ''} ${isNext ? 'level-current' : ''}`} style={{fontSize: 18, display:'flex', flexDirection:'column', gap:2}}>
                   <span>{locked ? '🔒' : lvl}</span>
                   <span style={{fontSize:9, lineHeight:1}}>{stars}</span>
                 </button>
@@ -306,7 +303,7 @@ function App() {
       {screen === 'shop' && (
         <div className="screen">
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
-            <button className="btn btn-secondary" onClick={tap(()=>setScreen('menu'))}>← Back</button>
+            <button className="btn btn-secondary" onClick={tap(backToMenu)}>← Back</button>
             <h2 style={{margin:0,fontSize:20,fontWeight:800,color:'#ec4899'}}>Cat Shop</h2>
             <div style={{width:60}}></div>
           </div>
@@ -316,7 +313,7 @@ function App() {
               const requiredWins = i * 3 + 1;
               const unlocked = state.stats.wins >= requiredWins;
               return (
-                <button key={i} disabled={!unlocked} onClick={()=>{ if(unlocked){ setState(rotateSkin({...state, catSkinIndex:i, catSkin:CAT_EMOJIS[i]})); if(state.soundOn) SoundManager.play('click'); }}} className="level-btn" style={{opacity: unlocked?1:0.35, fontSize:36}}>
+                <button key={i} disabled={!unlocked} onClick={()=>{ if(unlocked){ setState(rotateSkin({...state, catSkinIndex:i, catSkin:CAT_EMOJIS[i]})); sfx('unlock'); }}} className="level-btn" style={{opacity: unlocked?1:0.35, fontSize:36}}>
                   {cat}
                 </button>
               );
@@ -328,7 +325,7 @@ function App() {
       {screen === 'stats' && (
         <div className="screen">
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
-            <button className="btn btn-secondary" onClick={tap(()=>setScreen('menu'))}>← Back</button>
+            <button className="btn btn-secondary" onClick={tap(backToMenu)}>← Back</button>
             <h2 style={{margin:0,fontSize:20,fontWeight:800,color:'#9333ea'}}>Stats</h2>
             <div style={{width:60}}></div>
           </div>
