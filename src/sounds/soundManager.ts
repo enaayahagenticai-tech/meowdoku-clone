@@ -8,42 +8,64 @@ const files: Record<string, string> = {
   levelComplete: `${PREFIX}levelComplete.mp3`,
 };
 
-let audioCtx: AudioContext | null = null;
+const TTS_TEXT: Record<string, string> = {
+  click: 'Click.',
+  clickTick: 'Tick.',
+  place: 'Placed.',
+  wrong: 'Wrong.',
+  win: 'You win!',
+  levelComplete: 'Level complete.',
+};
 
-function getCtx() {
-  if (!audioCtx) {
-    const AC = (window as any).AudioContext || (window as any).webkitAudioContext;
-    if (AC) audioCtx = new AC();
-  }
-  return audioCtx;
+const EXPLICIT: Record<string, string> = {};
+
+export function setExplicitCache(map: Record<string, string>) {
+  Object.entries(map).forEach(([k, v]) => { EXPLICIT[k] = v; });
 }
 
-function beep(freq: number, ms: number, type: 'sine' | 'triangle' = 'sine', vol = 0.0001) {
-  const ctx = getCtx();
-  if (!ctx) return;
+let apiKey: string | null = null;
+let voiceId = 'EXAVITQu4vr4xnSDxMaL';
+
+export function configureElevenLabs(key: string, voice = 'EXAVITQu4vr4xnSDxMaL') {
+  apiKey = key;
+  voiceId = voice;
+}
+
+async function playFromUrl(url: string) {
+  const audio = new Audio(url);
+  audio.preload = 'none';
+  audio.volume = 0.35;
+  const p = audio.play();
+  if (p && typeof p.catch === 'function') p.catch(() => {});
+}
+
+async function ttsToUrl(name: string): Promise<void> {
+  if (!apiKey) return;
+  const text = TTS_TEXT[name] || name;
   try {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = type;
-    osc.frequency.value = freq;
-    gain.gain.value = vol;
-    osc.connect(gain).connect(ctx.destination);
-    osc.start();
-    setTimeout(() => { try { osc.stop(); } catch {} }, ms);
-  } catch {}
+    const res = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + voiceId, {
+      method: 'POST',
+      headers: { 'xi-api-key': apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, model_id: 'eleven_turbo_v2_5', output_format: 'mp3_44100_128' }),
+    });
+    if (!res.ok) return;
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    await playFromUrl(url);
+  } catch {
+    // silent fallback to static file below
+  }
 }
 
 export default {
-  play(name: keyof typeof files, fallback: 'click' | 'clickTick' | 'place' | 'wrong' | 'win' | 'levelComplete' = 'clickTick') {
-    const src = files[name] || files[fallback];
-    try {
-      const a = new Audio(src);
-      a.preload = 'none';
-      a.volume = 0.35;
-      const p = a.play();
-      if (p && typeof p.catch === 'function') p.catch(() => {});
-    } catch {
-      beep(660, 90, 'triangle', 0.0001);
-    }
+  play(name: keyof typeof files & string, _fallback?: keyof typeof files & string) {
+    const explicit = EXPLICIT[name] || files[name];
+    const doPlay = async () => {
+      try {
+        if (explicit) await playFromUrl(explicit);
+        else await ttsToUrl(name);
+      } catch {}
+    };
+    doPlay();
   },
 };

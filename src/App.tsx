@@ -21,6 +21,7 @@ type Screen = 'menu' | 'play' | 'levels' | 'shop' | 'stats' | 'daily-result';
 type CellValue = 'empty' | 'x-mark' | 'cat';
 
 const DIFFICULTY_TIERS: Difficulty[] = ['normal', 'hard', 'ultra'];
+const MAX_LIVES = 3;
 const COLORS = ['#FFD1DC','#D1E8FF','#D1FFD1','#FFF5BA','#F0D1FF','#B6D4FF','#FFE2CC','#CCFFE2','#E2CCFF','#D1FFF5'];
 
 const GRID_REGIONS: number[][] = Array.from({length:9}, () => Array(9).fill(0));
@@ -62,13 +63,14 @@ function App() {
   const [state, setState] = useState<AppState>(() => loadState());
   const [screen, setScreen] = useState<Screen>('menu');
   const [win, setWin] = useState(false);
+  const [gameOver, setGameOver] = useState(false);
   const [resultStars, setResultStars] = useState<0|1|2|3>(0);
   const taps = useRef<{row:number,col:number,t:number}[]>([]);
   const wrongIdRef = useRef(0);
 
   const [board, setBoard] = useState(() => makeBoard('normal'));
   const [boardState, setBoardState] = useState<CellValue[][]>([]);
-  const [hearts, setHearts] = useState(3);
+  const [lives, setLives] = useState(MAX_LIVES);
   const [solved, setSolved] = useState(false);
   const [level, setLevel] = useState(1);
   const [mode, setMode] = useState<Mode>('play');
@@ -82,7 +84,8 @@ function App() {
     saveState(state);
   }, [state]);
 
-  const tap = (fn: () => void) => () => { if (state.soundOn) SoundManager.play('click'); fn(); };
+  const sfx = (name: string) => { if (state.soundOn) SoundManager.play(name); };
+  const tap = (fn: () => void) => () => { sfx('click'); fn(); };
 
   const clearTimer = () => {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
@@ -97,8 +100,10 @@ function App() {
     const diff = m === 'play' ? difficultyForLevel(levelNum, DIFFICULTY_TIERS) : 'normal';
     const b = makeBoard(diff);
     const initBoardState = b.puzzle.map(r => r.map(v => v===1 ? 'cat' : 'empty')) as CellValue[][];
-    setBoard(b); setBoardState(initBoardState); setHearts(3); setSolved(false);
+    setBoard(b); setBoardState(initBoardState); setLives(MAX_LIVES); setSolved(false);
     setLevel(levelNum); setMode(m); setWrongCell(null); setElapsed(0); winUnlockedRef.current = false;
+    setWin(false); setGameOver(false);
+    setState(s => s.mode === m ? s : { ...s, mode: m });
     startTimer();
   };
 
@@ -108,9 +113,8 @@ function App() {
     setScreen('play');
   };
 
-  const showDailyResult = () => {
-    const won = solved && hearts > 0;
-    saveDailyState({ level, won, elapsedMs: won ? elapsed : null });
+  const showDailyResult = (finalElapsed: number) => {
+    saveDailyState({ level, won: true, elapsedMs: finalElapsed });
     setScreen('daily-result');
   };
 
@@ -121,17 +125,24 @@ function App() {
     });
   };
 
-  const finishLevel = () => {
-    const won = solved && hearts > 0;
+  // Called once per round. `won` is passed in explicitly (rather than read from
+  // state) because this runs from a setTimeout closure where `solved`/`lives`
+  // would be stale.
+  const finishLevel = (won: boolean, finalLives: number) => {
+    if (winUnlockedRef.current) return;
+    winUnlockedRef.current = true;
+    clearTimer();
+    const finalElapsed = Date.now() - startTsRef.current;
+    setElapsed(finalElapsed);
     const starCount = won ? (starsForLevel(level) as 1|2|3) : 0;
     setResultStars(starCount);
-    setState(s => recordLevelResult(s, level, won, elapsed));
-    addLevelResult({ won, stars: starCount, elapsedMs: elapsed, heartsLeft: hearts });
-    if (!winUnlockedRef.current) {
-      winUnlockedRef.current = true;
-      SoundManager.play('levelComplete');
-      clearTimer();
-      if (won) showDailyResult(); else setWin(true);
+    setState(s => recordLevelResult(s, level, won, finalElapsed));
+    addLevelResult({ won, stars: starCount, elapsedMs: won ? finalElapsed : null, heartsLeft: finalLives });
+    sfx(won ? 'levelComplete' : 'wrong');
+    if (won) {
+      if (mode === 'daily') showDailyResult(finalElapsed); else setWin(true);
+    } else {
+      setGameOver(true);
     }
   };
 
@@ -144,7 +155,7 @@ function App() {
   };
 
   const onCell = (r: number, c:number) => {
-    if (solved || hearts<=0) return;
+    if (solved || gameOver || lives<=0) return;
     const now = Date.now();
     const recent = taps.current.find(t=>t.row===r && t.col===c);
     const doubleTap = !!recent && (now-recent.t) < 300;
@@ -152,7 +163,7 @@ function App() {
 
     const val = boardState[r][c];
     const next = boardState.map(row => [...row]) as CellValue[][];
-    let hp = hearts;
+    let hp = lives;
     let placed = false;
     let wrongMove = false;
 
@@ -166,14 +177,17 @@ function App() {
     else if (val === 'cat') { if (!doubleTap) next[r][c] = 'empty'; }
 
     setBoardState(next);
-    setHearts(hp);
+    setLives(hp);
 
-    if (placed) { if (state.soundOn) SoundManager.play('place'); haptics.place(); }
-    if (wrongMove) {
-      if (state.soundOn) SoundManager.play('wrong'); haptics.wrong();
+    if (placed) { sfx('place'); haptics.place(); }
+    else if (wrongMove) {
+      sfx('wrong'); haptics.wrong();
       const id = ++wrongIdRef.current;
       setWrongCell({ row: r, col: c });
       setTimeout(() => { if (wrongIdRef.current === id) setWrongCell(null); }, 400);
+    } else {
+      // A plain toggle (x-mark or clear) — light tactile tick.
+      sfx('clickTick');
     }
 
     const cats = next.flat().filter(x=>x==='cat').length;
@@ -181,11 +195,11 @@ function App() {
 
     if (!wrongMove && cats === totalCats && hp>0 && isValid(next,board,r,c)) {
       setSolved(true);
-      SoundManager.play('win');
+      sfx('win');
       haptics.win();
-      setTimeout(() => finishLevel(), 300);
+      setTimeout(() => finishLevel(true, hp), 300);
     } else if (hp <= 0) {
-      setTimeout(() => { if (!winUnlockedRef.current) { finishLevel(); } }, 300);
+      setTimeout(() => finishLevel(false, 0), 300);
     }
   };
 
@@ -227,7 +241,7 @@ function App() {
             <div style={{display:'flex',gap:12,alignItems:'center'}}>
               <span style={{fontSize:12,color:'#ec4899',fontWeight:800}}>{formatTime(elapsed)}</span>
               <div className="hearts" style={{display:'flex',gap:4}}>
-                {Array.from({length: 3}).map((_,i) => (<span key={i} className={`heart ${hearts<=i?'lost':''}`}>❤️</span>))}
+                {Array.from({length: 3}).map((_,i) => (<span key={i} className={`heart ${lives<=i?'lost':''}`}>❤️</span>))}
               </div>
             </div>
             <span style={{fontSize:12,color:'#6b7280',textTransform:'uppercase',fontWeight:700}}>{board.difficulty}</span>
