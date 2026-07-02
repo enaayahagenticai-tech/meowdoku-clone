@@ -13,6 +13,9 @@ const files: Record<string, string> = {
   dailyDone: `${PREFIX}dailyDone.mp3`,
   unlock: `${PREFIX}unlock.mp3`,
   streak: `${PREFIX}streak.mp3`,
+  bonus: `${PREFIX}win.mp3`,
+  rare: `${PREFIX}levelUp.mp3`,
+  shop: `${PREFIX}toggle.mp3`,
 };
 
 const TTS_TEXT: Record<string, string> = {
