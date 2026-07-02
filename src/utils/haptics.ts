@@ -13,9 +13,15 @@ function vibrate(pattern: number | number[]) {
 }
 
 const haptics = {
-  place: () => vibrate(15),
+  light: () => vibrate(8),
+  medium: () => vibrate(18),
+  heavy: () => vibrate(28),
+  place: () => vibrate(14),
   wrong: () => vibrate([40, 60, 40]),
   win: () => vibrate([20, 40, 20, 40, 80]),
+  tick: () => vibrate(10),
+  pop: () => vibrate([12, 20, 12]),
 };
 
+export type HapticName = keyof typeof haptics;
 export default haptics;
