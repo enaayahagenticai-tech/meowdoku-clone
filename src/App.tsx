@@ -346,6 +346,23 @@ function App() {
             <h2 style={{margin:0,fontSize:20,fontWeight:800,color:'#9333ea'}}>Stats</h2>
             <div style={{width:60}}></div>
           </div>
+          {(() => {
+            const results = state.levelResults || {};
+            const totalStars = Object.values(results).reduce((sum, r) => sum + (r.won ? (r.stars || 0) : 0), 0);
+            const progress = Math.round((state.unlockedLevel / TOTAL_LEVELS) * 100);
+            const insight = state.stats.streak >= 3
+              ? `🔥 You're on a ${state.stats.streak}-win streak — keep it going!`
+              : state.stats.played === 0
+                ? '🐾 Play your first level to start tracking progress!'
+                : `⭐ ${totalStars} stars earned · ${TOTAL_LEVELS - state.unlockedLevel + 1} levels to conquer`;
+            return (
+              <div className="insight-card">
+                <div className="insight-msg">{insight}</div>
+                <div className="progress-track"><div className="progress-fill" style={{width:`${progress}%`}} /></div>
+                <div className="insight-sub">{progress}% of levels unlocked</div>
+              </div>
+            );
+          })()}
           <div style={{background:'white',borderRadius:16,padding:20,boxShadow:'0 2px 8px rgba(0,0,0,0.06)',display:'flex',flexDirection:'column',gap:16}}>
             <div style={{display:'flex',justifyContent:'space-between'}}><span>Games Played</span><b>{state.stats.played}</b></div>
             <div style={{display:'flex',justifyContent:'space-between'}}><span>Games Won</span><b>{state.stats.wins}</b></div>
@@ -366,6 +383,10 @@ function App() {
           <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:12,flex:1}}>
             <div style={{fontSize:56}}>📅</div>
             <h2 style={{fontSize:24,fontWeight:800,color:'#9333ea'}}>Daily Challenge</h2>
+            <div style={{fontSize:40,fontWeight:800,color:'#ec4899',lineHeight:1}}>{formatTime(elapsed)}</div>
+            {state.stats.bestDailyTime != null && elapsed <= state.stats.bestDailyTime && (
+              <div className="unlock-banner">🏆 New personal best!</div>
+            )}
             <div style={{display:'flex',gap:16,width:'100%'}}>
               <div className="btn btn-secondary" style={{flex:1}}>Best: {formatTime(state.stats.bestDailyTime)}</div>
               <div className="btn btn-secondary" style={{flex:1}}>Streak: {state.stats.streak}</div>
@@ -390,6 +411,9 @@ function App() {
                 <span key={i} style={{color: i < resultStars ? '#f59e0b' : '#d1d5db', fontSize: 34}}>★</span>
               ))}
             </div>
+            {mode === 'play' && level < TOTAL_LEVELS && state.unlockedLevel === level + 1 && (
+              <div className="unlock-banner">🔓 Level {level + 1} unlocked!</div>
+            )}
             <p style={{color:'#6b7280',marginBottom:24}}>
               {mode === 'daily' ? `Time: ${formatTime(elapsed)}` : `Great job solving this puzzle!`}
             </p>

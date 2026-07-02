@@ -147,6 +147,55 @@
   50% { box-shadow: 0 0 0 2px #a855f7, 0 0 0 12px rgba(168,85,247,0.06); }
 }
 
+/* Level-unlock / new-best banner */
+.unlock-banner {
+  display: inline-block;
+  margin: 0 auto 16px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: linear-gradient(180deg,#fef3c7,#fde68a);
+  color: #92400e;
+  font-weight: 800;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(245,158,11,0.25);
+  animation: unlockPop .45s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes unlockPop {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.12); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Stats insight card */
+.insight-card {
+  background: linear-gradient(135deg,#a855f7,#ec4899);
+  color: white;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 6px 18px rgba(168,85,247,0.25);
+  animation: hintIn .35s ease both;
+}
+.insight-msg { font-weight: 800; font-size: 14px; margin-bottom: 12px; }
+.insight-sub { font-size: 11px; font-weight: 600; opacity: 0.9; margin-top: 6px; }
+.progress-track {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.3);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: white;
+  box-shadow: 0 0 8px rgba(255,255,255,0.6);
+  transition: width .6s cubic-bezier(.34,1.2,.64,1);
+  animation: progressGrow .8s ease both;
+}
+@keyframes progressGrow {
+  0% { width: 0 !important; }
+}
+
 .win-overlay {
   position: fixed;
   inset: 0;
