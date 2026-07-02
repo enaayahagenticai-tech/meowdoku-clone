@@ -38,7 +38,7 @@ function makeBoard(diff: Difficulty) {
     for (let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1; dc++){ if(!dr && !dc) continue; const nr=row+dr,nc=col+dc; if(nr>=0&&nr<9&&nc>=0&&nc<9 && sol[nr][nc]) return false; }
     return true;
   }
-  function place(idx:number){ if(idx>9) return true; for(const [row,col] of regionList[idx].cells) if(ok(solution,row,col)){ solution[row][col]=1; if(place(idx+1)) return true; solution[row][col]=0; } return false; }
+  function place(idx:number){ if(idx>9) return true; for(const [row,col] of regionList[idx-1].cells) if(ok(solution,row,col)){ solution[row][col]=1; if(place(idx+1)) return true; solution[row][col]=0; } return false; }
   const puzzle = Array.from({length:9}, ()=>Array<number>(9).fill(0));
   for (let i=0;i<20;i++) if(place(i+1)) break;
   const keep = diff==='normal'?5 : diff==='hard'?2 : 0;
