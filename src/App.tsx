@@ -427,10 +427,10 @@ function App() {
               <div className="unlock-banner">🔓 Level {level + 1} unlocked!</div>
             )}
             <p style={{color:'#6b7280',marginBottom:24}}>
-              {mode === 'daily' ? `Time: ${formatTime(elapsed)}` : `Great job solving this puzzle!`}
+              {mode === 'daily' ? `Time: ${formatTime(elapsed)}` : <span className="win-body">Great job solving this puzzle!</span>}
             </p>
             {mode === 'play' && level < TOTAL_LEVELS && (
-              <button className="btn btn-primary" onClick={tap(nextLevel)} style={{width:'100%',padding:14}}>Next Level</button>
+              <button className="btn btn-primary win-cta" onClick={tap(nextLevel)} style={{width:'100%',padding:14}}>Next Level</button>
             )}
             <div style={{display:'flex',gap:8,marginTop:8}}>
               <button className="btn btn-secondary" onClick={tap(restart)} style={{flex:1}}>Retry</button>
