@@ -136,10 +136,15 @@ function App() {
     setResultStars(starCount);
     setState(s => recordLevelResult(s, level, won, finalElapsed));
     addLevelResult({ won, stars: starCount, elapsedMs: won ? finalElapsed : null, heartsLeft: finalLives });
-    sfx(won ? 'win' : 'lifeLost');
     if (won) {
+      // Staged celebration: the solve chime already fired in onCell; follow it
+      // with the bigger fanfare, then a streak flourish on milestones.
+      sfx(mode === 'daily' ? 'dailyDone' : 'levelComplete');
+      const newStreak = state.stats.streak + 1;
+      if (newStreak >= 3 && newStreak % 3 === 0) setTimeout(() => sfx('streak'), 550);
       if (mode === 'daily') showDailyResult(finalElapsed); else setWin(true);
     } else {
+      sfx('lifeLost');
       setGameOver(true);
     }
   };
@@ -201,6 +206,7 @@ function App() {
   };
 
   const nextLevel = () => {
+    sfx('levelUp');
     setWin(false);
     applyBoard(Math.min(TOTAL_LEVELS, level + 1), mode);
   };
