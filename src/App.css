@@ -54,10 +54,24 @@
   30%, 50%, 70% { transform: translateX(-5px); }
   40%, 60% { transform: translateX(5px); }
 }
+@keyframes ripple {
+  0% { transform: scale(0.8); opacity: 0.6; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
 .cell-cat { animation: cellPop .22s ease; }
 .cell-xmark { animation: cellMark .15s ease; }
 .cell-empty { animation: cellFade .15s ease; }
 .cell-wrong { animation: shake .4s ease; background-color: rgba(239,68,68,0.35) !important; }
+.cell-ripple { position: relative; overflow: hidden; }
+.cell-ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(168, 85, 247, 0.35);
+  animation: ripple .45s ease-out forwards;
+  pointer-events: none;
+}
 
 .hearts .heart { font-size: 24px; transition: opacity .2s; }
 .hearts .lost { opacity: 0.2; }
