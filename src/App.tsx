@@ -8,8 +8,8 @@ import {
   rotateSkin,
   saveDailyState,
   saveState,
-  type AppState,
 } from './store/gameStore';
+import type { AppState, LevelResult } from './store/gameStore';
 import type { Difficulty } from './puzzle/types';
 import SoundManager from './sounds/soundManager';
 import haptics from './utils/haptics';
@@ -34,22 +34,15 @@ function makeBoard(diff: Difficulty) {
   function ok(sol: number[][], row: number, col: number) {
     for (let j=0;j<9;j++) if (sol[row][j]) return false;
     for (let i=0;i<9;i++) if (sol[i][col]) return false;
-    for (let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){
-      if (!dr && !dc) continue;
-      const nr=row+dr,nc=col+dc; if (nr>=0&&nr<9&&nc>=0&&nc<9&&sol[nr][nc]) return false;
-    }
+    for (let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1; dc++){ if(!dr && !dc) continue; const nr=row+dr,nc=col+dc; if(nr>=0&&nr<9&&nc>=0&&nc<9 && sol[nr][nc]) return false; }
     return true;
   }
-  function place(idx:number){
-    if (idx>9) return true;
-    for (const [row,col] of regionList[idx].cells) if (ok(solution,row,col)) { solution[row][col]=1; if (place(idx+1)) return true; solution[row][col]=0; }
-    return false;
-  }
+  function place(idx:number){ if(idx>9) return true; for(const [row,col] of regionList[idx].cells) if(ok(solution,row,col)){ solution[row][col]=1; if(place(idx+1)) return true; solution[row][col]=0; } return false; }
   const puzzle = Array.from({length:9}, ()=>Array<number>(9).fill(0));
   for (let i=0;i<20;i++) if(place(i+1)) break;
   const keep = diff==='normal'?5 : diff==='hard'?2 : 0;
-  const cells:[number,number][]=[]; for (let r=0;r<9;r++) for(let c=0;c<9;c++) if(solution[r][c]) cells.push([r,c]);
-  for (const [r,c] of [...cells].sort(()=>Math.random()-0.5).slice(0,Math.max(1,keep))) puzzle[r][c]=1;
+  const cells:[number,number][]=[]; for(let r=0;r<9;r++) for(let c=0;c<9;c++) if(solution[r][c]) cells.push([r,c]);
+  for(const [r,c] of [...cells].sort(()=>Math.random()-0.5).slice(0,Math.max(1,keep))) puzzle[r][c]=1;
   return { solution, puzzle, regions: regionList, colors: regionList.map(x=>x.color), grid: GRID_REGIONS, difficulty: diff };
 }
 
@@ -60,16 +53,18 @@ function formatTime(ms?: number | null) {
   return `${m}:${(s % 60).toString().padStart(2, '0')}`;
 }
 
+function starsForLevel(level: number) {
+  if (level % 5 === 0) return 3;
+  return 2;
+}
+
 function App() {
   const [state, setState] = useState<AppState>(() => loadState());
   const [screen, setScreen] = useState<Screen>('menu');
   const [win, setWin] = useState(false);
+  const [resultStars, setResultStars] = useState<0|1|2|3>(0);
   const taps = useRef<{row:number,col:number,t:number}[]>([]);
   const wrongIdRef = useRef(0);
-
-  useEffect(() => {
-    saveState(state);
-  }, [state]);
 
   const [board, setBoard] = useState(() => makeBoard('normal'));
   const [boardState, setBoardState] = useState<CellValue[][]>([]);
@@ -82,6 +77,10 @@ function App() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTsRef = useRef(0);
   const winUnlockedRef = useRef(false);
+
+  useEffect(() => {
+    saveState(state);
+  }, [state]);
 
   const tap = (fn: () => void) => () => { if (state.soundOn) SoundManager.play('click'); fn(); };
 
@@ -115,14 +114,32 @@ function App() {
     setScreen('daily-result');
   };
 
+  const addLevelResult = (result: LevelResult) => {
+    setState(s => {
+      const levelResults = { ...(s.levelResults || {}), [level]: result } as Record<number, LevelResult>;
+      return { ...s, levelResults };
+    });
+  };
+
+  const finishLevel = () => {
+    const won = solved && hearts > 0;
+    const starCount = won ? (starsForLevel(level) as 1|2|3) : 0;
+    setResultStars(starCount);
+    setState(s => recordLevelResult(s, level, won, elapsed));
+    addLevelResult({ won, stars: starCount, elapsedMs: elapsed, heartsLeft: hearts });
+    if (!winUnlockedRef.current) {
+      winUnlockedRef.current = true;
+      SoundManager.play('levelComplete');
+      clearTimer();
+      if (won) showDailyResult(); else setWin(true);
+    }
+  };
+
   const isValid = (bs: CellValue[][], brd: any, row:number, col:number) => {
     if (brd.puzzle[row][col] === 1 && bs[row][col] !== 'cat') return false;
     for (let j=0;j<9;j++) if (bs[row][j]==='cat') return false;
     for (let i=0;i<9;i++) if (bs[i][col]==='cat') return false;
-    for (let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){
-      if (!dr && !dc) continue;
-      const nr=row+dr,nc=col+dc; if (nr>=0&&nr<9&&nc>=0&&nc<9&&bs[nr][nc]==='cat') return false;
-    }
+    for (let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1; dc++){ if(!dr && !dc) continue; const nr=row+dr,nc=col+dc; if(nr>=0&&nr<9&&nc>=0&&nc<9 && bs[nr][nc]==='cat') return false; }
     return true;
   };
 
@@ -166,39 +183,26 @@ function App() {
       setSolved(true);
       SoundManager.play('win');
       haptics.win();
-      setState(s => recordLevelResult(s, level, true, elapsed));
-      if (!winUnlockedRef.current) {
-        winUnlockedRef.current = true;
-        setTimeout(() => { setWin(true); SoundManager.play('levelComplete'); clearTimer(); showDailyResult(); }, 250);
-      }
+      setTimeout(() => finishLevel(), 300);
     } else if (hp <= 0) {
-      if (!winUnlockedRef.current) {
-        winUnlockedRef.current = true;
-        setState(s => recordLevelResult(s, level, false, elapsed));
-      }
+      setTimeout(() => { if (!winUnlockedRef.current) { finishLevel(); } }, 300);
     }
   };
 
-  const restart = () => {
-    if (state.soundOn) SoundManager.play('click');
-    applyBoard(level, mode);
-    startTimer();
+  const nextLevel = () => {
+    setWin(false);
+    applyBoard(Math.min(TOTAL_LEVELS, level + 1), mode);
   };
+  const restart = () => { if (state.soundOn) SoundManager.play('click'); applyBoard(level, mode); };
   const backToMenu = () => { clearTimer(); setScreen('menu'); };
-  const toggleSound = () => {
-    const next = !state.soundOn;
-    setState(s => ({ ...s, soundOn: next }));
-    if (next) SoundManager.play('click');
-  };
+  const toggleSound = () => { const next = !state.soundOn; setState(s => ({ ...s, soundOn: next })); if(next) SoundManager.play('click'); };
 
   return (
     <div>
       {screen === 'menu' && (
         <div className="screen">
           <div style={{display:'flex',justifyContent:'flex-end',padding:'8px 0'}}>
-            <button className="btn btn-secondary" onClick={toggleSound} style={{padding:'8px 12px',fontSize:20}}>
-              {state.soundOn ? '🔊' : '🔇'}
-            </button>
+            <button className="btn btn-secondary" onClick={toggleSound} style={{padding:'8px 12px',fontSize:20}}>{state.soundOn ? '🔊' : '🔇'}</button>
           </div>
           <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:16,flex:1}}>
             <div style={{fontSize:64}}>🐱</div>
@@ -239,12 +243,7 @@ function App() {
                 if (cell === 'x-mark') content = <span style={{color:'#9ca3af',fontWeight:700}}>×</span>;
                 else if (cell === 'cat') content = <span style={{fontSize:36}}>{state.catSkin}</span>;
                 return (
-                  <button
-                    key={`${r}-${c}-${cell}-${isWrong ? 'wrong' : 'ok'}`}
-                    className={`cell ${animClass}`}
-                    onClick={()=>onCell(r,c)}
-                    style={{backgroundColor:bg}}
-                  >
+                  <button key={`${r}-${c}-${cell}-${isWrong?'wrong':'ok'}`} className={`cell ${animClass}`} onClick={()=>onCell(r,c)} style={{backgroundColor:bg}}>
                     {content}
                   </button>
                 );
@@ -271,22 +270,18 @@ function App() {
             <h2 style={{margin:0,fontSize:20,fontWeight:800,color:'#9333ea'}}>Levels</h2>
             <div style={{width:60}}></div>
           </div>
-          <p style={{fontSize:12,color:'#6b7280',marginBottom:12}}>
-            Difficulty rises every 5 levels: {DIFFICULTY_TIERS.join(' → ')} → repeat
-          </p>
+          <p style={{fontSize:12,color:'#6b7280',marginBottom:12}}>Difficulty rises every 5 levels: {DIFFICULTY_TIERS.join(' → ')} → repeat</p>
           <div className="menu-grid" style={{overflowY:'auto'}}>
             {Array.from({length: TOTAL_LEVELS}).map((_,i) => {
               const lvl = i + 1;
               const locked = lvl > state.unlockedLevel;
+              const result = state.levelResults ? state.levelResults[lvl] : undefined;
               const isNext = lvl === state.unlockedLevel;
+              const stars = result && result.won ? Array.from({length: 3}).map((_, idx) => idx < (result.stars || 0) ? '⭐' : '☆').join('') : '';
               return (
-                <button
-                  key={lvl}
-                  disabled={locked}
-                  onClick={tap(()=>openBoard('play', lvl))}
-                  className={`level-btn ${locked ? 'locked' : ''} ${isNext ? 'level-current' : ''}`}
-                >
-                  {locked ? '🔒' : lvl}
+                <button key={lvl} disabled={locked} onClick={tap(()=>openBoard('play', lvl))} className={`level-btn ${locked ? 'locked' : ''} ${isNext ? 'level-current' : ''}`} style={{fontSize: stars ? 18 : 18, display:'flex', flexDirection:'column', gap:2}}>
+                  <span>{locked ? '🔒' : lvl}</span>
+                  <span style={{fontSize:9, lineHeight:1}}>{stars}</span>
                 </button>
               );
             })}
@@ -357,19 +352,26 @@ function App() {
           <div className="win-card" onClick={e=>e.stopPropagation()}>
             <div className="confetti-wrap">
               {Array.from({length: 14}).map((_, i) => (
-                <span
-                  key={i}
-                  className="confetti-piece"
-                  style={{ left: `${(i * 37) % 100}%`, background: COLORS[i % COLORS.length], animationDelay: `${(i % 5) * 0.1}s` }}
-                />
+                <span key={i} className="confetti-piece" style={{ left: `${(i * 37) % 100}%`, background: COLORS[i % COLORS.length], animationDelay: `${(i % 5) * 0.1}s` }} />
               ))}
             </div>
             <div className="win-emoji">🎉</div>
             <h2 style={{fontSize:28,fontWeight:800,color:'#9333ea',marginBottom:8}}>Level Complete!</h2>
+            <div style={{display:'flex',gap:6,justifyContent:'center',marginBottom:16}}>
+              {Array.from({length: 3}).map((_, i) => (
+                <span key={i} style={{color: i < resultStars ? '#f59e0b' : '#d1d5db', fontSize: 34}}>★</span>
+              ))}
+            </div>
             <p style={{color:'#6b7280',marginBottom:24}}>
-              {mode === 'daily' ? `Time: ${formatTime(elapsed)}` : `Great job solving the puzzle!`}
+              {mode === 'daily' ? `Time: ${formatTime(elapsed)}` : `Great job solving this puzzle!`}
             </p>
-            <button className="btn btn-primary" onClick={tap(()=>setWin(false))} style={{width:'100%',padding:14}}>Continue</button>
+            {mode === 'play' && level < TOTAL_LEVELS && (
+              <button className="btn btn-primary" onClick={tap(nextLevel)} style={{width:'100%',padding:14}}>Next Level</button>
+            )}
+            <div style={{display:'flex',gap:8,marginTop:8}}>
+              <button className="btn btn-secondary" onClick={tap(restart)} style={{flex:1}}>Retry</button>
+              <button className="btn btn-secondary" onClick={tap(()=>setWin(false))} style={{flex:1}}>Menu</button>
+            </div>
           </div>
         </div>
       )}

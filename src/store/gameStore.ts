@@ -8,6 +8,14 @@ export const CAT_EMOJIS = [
 ];
 
 export const TOTAL_LEVELS = 100;
+export const LEVELS_PER_TIER = 5;
+
+export interface LevelResult {
+  won: boolean;
+  stars: 0 | 1 | 2 | 3;
+  elapsedMs: number | null;
+  heartsLeft: number;
+}
 
 export interface AppState {
   mode: GameMode;
@@ -17,7 +25,16 @@ export interface AppState {
   catSkin: string;
   catSkinIndex: number;
   soundOn: boolean;
-  stats: { played: number; wins: number; bestTime: number | null; streak: number; bestStreak: number; bestDailyTime: number | null };
+  levelResults: Record<number, LevelResult>;
+  stats: {
+    played: number;
+    wins: number;
+    bestTime: number | null;
+    streak: number;
+    bestStreak: number;
+    bestDailyTime: number | null;
+    totalStars: number;
+  };
 }
 
 export const initialState: AppState = {
@@ -28,7 +45,8 @@ export const initialState: AppState = {
   catSkin: CAT_EMOJIS[0],
   catSkinIndex: 0,
   soundOn: true,
-  stats: { played: 0, wins: 0, bestTime: null, streak: 0, bestStreak: 0, bestDailyTime: null },
+  levelResults: {},
+  stats: { played: 0, wins: 0, bestTime: null, streak: 0, bestStreak: 0, bestDailyTime: null, totalStars: 0 },
 };
 
 export function loadState(): AppState {
