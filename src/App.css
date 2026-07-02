@@ -14,7 +14,11 @@
   gap: 10px;
   align-items: center;
 }
-.coach-icon { font-size: 18px; }
+.coach { font-size: 13px; }
+
+/* Preset coaching texts for first-run contexts */
+.coach-menu::before { content: 'Tip: tap a cell twice to place or remove a cat'; }
+.coach-play::before { content: 'Double tap to place cats. Fill every region with 9 cats.'; }
 .screen--static { animation: none !important; }
 
 .btn {
@@ -161,8 +165,14 @@
 .level-btn.locked { opacity: 0.35; filter: grayscale(1); cursor: not-allowed; }
 .level-btn.level-current { box-shadow: 0 0 0 2px #a855f7; animation: currentPulse 1.8s ease-in-out infinite; }
 @keyframes currentPulse {
-  0%, 100% { box-shadow: 0 0 0 2px #a855f7, 0 0 0 6px rgba(168,85,247,0.15); }
-  50% { box-shadow: 0 0 0 2px #a855f7, 0 0 0 12px rgba(168,85,247,0.06); }
+  0%, 100% { box-shadow: 0 0 0 2px #a855f7, 0 0 0 6px rgba(168,85,247,0.18); }
+  50% { box-shadow: 0 0 0 2px #a855f7, 0 0 0 14px rgba(168,85,247,0.06); }
+}
+.level-btn.level-current.recently-unlocked { animation: unlockReveal .9s ease both; }
+@keyframes unlockReveal {
+  0% { transform: scale(.85); opacity:.5; }
+  60% { transform: scale(1.05); opacity:1; }
+  100% { transform: scale(1); opacity:1; }
 }
 
 /* Level-unlock / new-best banner */

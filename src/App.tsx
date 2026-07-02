@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, memo, useRef, useState } from 'react';
 import {
   CAT_EMOJIS,
   TOTAL_LEVELS,
@@ -58,6 +58,25 @@ function starsForLevel(level: number) {
   if (level % 5 === 0) return 3;
   return 2;
 }
+
+type CellProps = {
+  cell: CellValue;
+  bg: string;
+  isWrong: boolean;
+  skin: string;
+  onClick: () => void;
+};
+const Cell = ({ cell, bg, isWrong, skin, onClick }: CellProps) => {
+  const animClass = isWrong ? 'cell-wrong' : cell === 'cat' ? 'cell-cat' : cell === 'x-mark' ? 'cell-xmark' : 'cell-empty';
+  const content = cell === 'x-mark' ? <span style={{color:'#9ca3af',fontWeight:700}}>×</span> : cell === 'cat' ? <span style={{fontSize:36}}>{skin}</span> : null;
+  return (
+    <button className={`cell ${animClass}`} onClick={onClick} style={{backgroundColor:bg}} aria-label={`row col ${cell}`}>
+      {content}
+    </button>
+  );
+};
+
+const CellMemo = memo(Cell);
 
 function App() {
   const [state, setState] = useState<AppState>(() => loadState());
@@ -227,6 +246,7 @@ function App() {
           <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:16,flex:1}}>
             <div style={{fontSize:64}}>🐱</div>
             <h1 style={{fontSize:32,fontWeight:800,color:'#9333ea'}}>Meowdoku Clone</h1>
+            <div className="coach coach-menu" style={{width:'100%'}} />
             <div style={{display:'flex',gap:8,width:'100%'}}>
               <button className="btn btn-primary" style={{flex:1,padding:14}} onClick={tap(()=>openBoard('play'))}>Play Now</button>
               <button className="btn btn-primary" style={{flex:1,padding:14,background:'#ec4899'}} onClick={tap(()=>openBoard('daily'))}>Daily</button>
@@ -262,19 +282,11 @@ function App() {
           )}
 
           <div style={{background:'white',borderRadius:16,padding:8,boxShadow:'0 2px 8px rgba(0,0,0,0.06)',flex:1,display:'flex',flexDirection:'column'}}>
-            <div className="board" style={{gridTemplateColumns:'repeat(9, 1fr)'}}>
+            <div className="board" role="grid" style={{gridTemplateColumns:'repeat(9, 1fr)'}}>
               {boardState.map((row, r) => row.map((cell, c) => {
                 const bg = board.colors[board.grid[r][c] % board.colors.length] + '40';
                 const isWrong = wrongCell?.row === r && wrongCell?.col === c;
-                const animClass = isWrong ? 'cell-wrong' : cell === 'cat' ? 'cell-cat' : cell === 'x-mark' ? 'cell-xmark' : 'cell-empty';
-                let content: any = null;
-                if (cell === 'x-mark') content = <span style={{color:'#9ca3af',fontWeight:700}}>×</span>;
-                else if (cell === 'cat') content = <span style={{fontSize:36}}>{state.catSkin}</span>;
-                return (
-                  <button key={`${r}-${c}-${cell}-${isWrong?'wrong':'ok'}`} className={`cell ${animClass}`} onClick={()=>onCell(r,c)} style={{backgroundColor:bg}}>
-                    {content}
-                  </button>
-                );
+                return <CellMemo key={`${r}-${c}`} cell={cell} bg={bg} isWrong={isWrong} skin={state.catSkin} onClick={()=>onCell(r,c)} />;
               }))}
             </div>
 
@@ -405,8 +417,8 @@ function App() {
               ))}
             </div>
             <div className="win-emoji">🎉</div>
-            <h2 style={{fontSize:28,fontWeight:800,color:'#9333ea',marginBottom:8}}>Level Complete!</h2>
-            <div style={{display:'flex',gap:6,justifyContent:'center',marginBottom:16}}>
+            <h2 className="win-title" style={{fontSize:28,fontWeight:800,color:'#9333ea',marginBottom:8}}>Level Complete!</h2>
+            <div className="win-stars" style={{display:'flex',gap:6,justifyContent:'center',marginBottom:16}}>
               {Array.from({length: 3}).map((_, i) => (
                 <span key={i} className="win-star" style={{color: i < resultStars ? '#f59e0b' : '#d1d5db', fontSize: 34, animationDelay: `${0.25 + i * 0.18}s`}}>★</span>
               ))}
