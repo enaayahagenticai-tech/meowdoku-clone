@@ -2,16 +2,13 @@ import fs from 'fs';
 import path from 'path';
 import https from 'https';
 
-const cfg = '/Users/skr/.hermes/config.yaml';
-const raw = fs.readFileSync(cfg, 'utf8');
-const m = raw.match(/elevenlabs:\s*\n\s*api_key:\s*(.+)/);
-if (!m) {
-  console.error('ElevenLabs key not found in Hermes config');
-  process.exit(1);
-}
-const apiKey = m[1].trim().replace(/^['"]|['"]$/g, '');
-const voiceId = process.env.ELEVENLABS_VOICE_ID || 'EXAVITQu4vr4xnSDxMaL';
-const outDir = path.join(process.cwd(), 'src', 'sounds', 'sfx');
+const envPath = '/Users/skr/.config/sharktycoon/audio.env';
+const raw = fs.readFileSync(envPath, 'utf8');
+const m = raw.match(/ELEVENLABS_API_KEY="([^"]+)"/);
+if (!m) { console.error('No key in audio.env'); process.exit(1); }
+const apiKey = m[1];
+const voiceId = 'EXAVITQu4vr4xnSDxMaL';
+const outDir = path.join('/Users/skr/meowdoku-clone', 'src', 'sounds', 'sfx');
 fs.mkdirSync(outDir, { recursive: true });
 
 const items = [
@@ -39,7 +36,6 @@ async function main() {
       req.write(payload);
       req.end();
     });
-
     const out = path.join(outDir, item.name + '.mp3');
     if (result.status === 200) {
       fs.writeFileSync(out, result.body);
@@ -49,7 +45,6 @@ async function main() {
       process.exit(1);
     }
   }
-  console.log('Generated real ElevenLabs TTS SFX into src/sounds/sfx/');
+  console.log('Done');
 }
-
 main().catch((e) => { console.error(e); process.exit(1); });
