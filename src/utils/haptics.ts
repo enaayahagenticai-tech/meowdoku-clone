@@ -21,6 +21,8 @@ const haptics = {
   win: () => vibrate([20, 40, 20, 40, 80]),
   tick: () => vibrate(10),
   pop: () => vibrate([12, 20, 12]),
+  onboardingStep: () => vibrate([8, 30, 8]),
+  hint: () => vibrate([10, 20, 10]),
 };
 
 export type HapticName = keyof typeof haptics;

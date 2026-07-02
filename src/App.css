@@ -216,7 +216,7 @@
   text-align: center;
   position: relative;
   overflow: hidden;
-  animation: winPop .4s cubic-bezier(.34,1.56,.64,1);
+  animation: winPop .45s cubic-bezier(.34,1.56,.64,1) both;
 }
 @keyframes winPop {
   0% { transform: scale(0.4) rotate(-8deg); opacity: 0; }
@@ -227,14 +227,57 @@
   display: inline-block;
   font-size: 72px;
   margin-bottom: 16px;
-  animation: trophyBounce 1s ease-in-out infinite;
+  animation: trophyBounce 1s ease-in-out infinite, winSeqIn .45s ease both;
 }
-@keyframes trophyBounce {
-  0%, 100% { transform: translateY(0) scale(1); }
-  30% { transform: translateY(-14px) scale(1.1); }
-  50% { transform: translateY(0) scale(1); }
-  70% { transform: translateY(-6px); }
+@keyframes winSeqIn {
+  0% { opacity:0; transform: translateY(8px) scale(.92); }
+  100% { opacity:1; transform: translateY(0) scale(1); }
 }
+.win-title { animation: winSeqIn .45s ease both; animation-delay: .08s; }
+.win-stars { animation: winSeqIn .4s ease both; animation-delay: .18s; }
+.win-body { animation: winSeqIn .4s ease both; animation-delay: .26s; }
+.win-cta { animation: winPop .35s cubic-bezier(.34,1.56,.64,1) both; animation-delay: .35s; }
+/* Staggered win-star reveal */
+.win-star { display: inline-block; animation: starPop .4s cubic-bezier(.34,1.56,.64,1) both; }
+@keyframes starPop {
+  0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+  70% { transform: scale(1.35) rotate(8deg); }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+/* Game-over overlay — serialized reveal */
+.gameover-card { animation: gameoverDrop .5s cubic-bezier(.34,1.4,.64,1) both; }
+@keyframes gameoverDrop {
+  0% { transform: translateY(-40px) scale(0.85); opacity: 0; }
+  60% { transform: translateY(6px) scale(1.02); }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+.gameover-emoji {
+  display: inline-block;
+  font-size: 72px;
+  margin-bottom: 16px;
+  animation: gameoverShake .6s ease .3s both, sadFloat 2.4s ease-in-out 0.9s infinite;
+}
+@keyframes gameoverShake {
+  0% { transform: scale(0.4) rotate(0); opacity: 0; }
+  50% { transform: scale(1.1) rotate(-10deg); opacity: 1; }
+  65% { transform: rotate(8deg); }
+  80% { transform: rotate(-5deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+@keyframes sadFloat {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  50% { transform: translateY(4px) rotate(-3deg); }
+}
+.gameover-reveal { opacity: 0; animation: revealUp .4s ease both; }
+.gameover-reveal-1 { animation-delay: .45s; }
+.gameover-reveal-2 { animation-delay: .6s; }
+.gameover-reveal-3 { animation-delay: .78s; }
+@keyframes revealUp {
+  0% { transform: translateY(10px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
 .confetti-wrap { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 .confetti-piece {
   position: absolute;

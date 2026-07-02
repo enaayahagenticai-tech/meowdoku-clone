@@ -408,7 +408,7 @@ function App() {
             <h2 style={{fontSize:28,fontWeight:800,color:'#9333ea',marginBottom:8}}>Level Complete!</h2>
             <div style={{display:'flex',gap:6,justifyContent:'center',marginBottom:16}}>
               {Array.from({length: 3}).map((_, i) => (
-                <span key={i} style={{color: i < resultStars ? '#f59e0b' : '#d1d5db', fontSize: 34}}>★</span>
+                <span key={i} className="win-star" style={{color: i < resultStars ? '#f59e0b' : '#d1d5db', fontSize: 34, animationDelay: `${0.25 + i * 0.18}s`}}>★</span>
               ))}
             </div>
             {mode === 'play' && level < TOTAL_LEVELS && state.unlockedLevel === level + 1 && (
@@ -423,6 +423,20 @@ function App() {
             <div style={{display:'flex',gap:8,marginTop:8}}>
               <button className="btn btn-secondary" onClick={tap(restart)} style={{flex:1}}>Retry</button>
               <button className="btn btn-secondary" onClick={tap(()=>setWin(false))} style={{flex:1}}>Menu</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {gameOver && (
+        <div className="win-overlay" onClick={()=>{ setGameOver(false); backToMenu(); }}>
+          <div className="win-card gameover-card" onClick={e=>e.stopPropagation()}>
+            <div className="gameover-emoji">🙀</div>
+            <h2 className="gameover-reveal gameover-reveal-1" style={{fontSize:28,fontWeight:800,color:'#dc2626',marginBottom:8}}>Out of Lives!</h2>
+            <p className="gameover-reveal gameover-reveal-2" style={{color:'#6b7280',marginBottom:24}}>The cats slipped away — give it another try.</p>
+            <div className="gameover-reveal gameover-reveal-3" style={{display:'flex',flexDirection:'column',gap:8}}>
+              <button className="btn btn-primary" onClick={restart} style={{width:'100%',padding:14}}>Try Again</button>
+              <button className="btn btn-secondary" onClick={()=>{ setGameOver(false); backToMenu(); }} style={{width:'100%'}}>Menu</button>
             </div>
           </div>
         </div>
