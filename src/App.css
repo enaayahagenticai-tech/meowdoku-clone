@@ -148,13 +148,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
+  border-radius: 14px;
   background: white;
   box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-  font-weight: 700;
+  font-weight: 800;
   color: #9333ea;
   cursor: pointer;
+  transition: transform .12s ease, box-shadow .15s ease;
 }
+.level-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(147,51,234,0.15); }
+.level-btn:active { transform: translateY(1px); box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
 .level-btn.locked { opacity: 0.35; filter: grayscale(1); cursor: not-allowed; }
 .level-btn.level-current { box-shadow: 0 0 0 2px #a855f7; animation: currentPulse 1.8s ease-in-out infinite; }
 @keyframes currentPulse {
