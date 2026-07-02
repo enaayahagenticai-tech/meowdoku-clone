@@ -106,7 +106,11 @@
   cursor: pointer;
 }
 .level-btn.locked { opacity: 0.35; filter: grayscale(1); cursor: not-allowed; }
-.level-btn.level-current { box-shadow: 0 0 0 2px #a855f7; }
+.level-btn.level-current { box-shadow: 0 0 0 2px #a855f7; animation: currentPulse 1.8s ease-in-out infinite; }
+@keyframes currentPulse {
+  0%, 100% { box-shadow: 0 0 0 2px #a855f7, 0 0 0 6px rgba(168,85,247,0.15); }
+  50% { box-shadow: 0 0 0 2px #a855f7, 0 0 0 12px rgba(168,85,247,0.06); }
+}
 
 .win-overlay {
   position: fixed;
