@@ -281,20 +281,18 @@ function App() {
             </button>
           )}
 
-          <div style={{background:'white',borderRadius:16,padding:8,boxShadow:'0 2px 8px rgba(0,0,0,0.06)',flex:1,display:'flex',flexDirection:'column'}}>
-            <div className="board" role="grid" style={{gridTemplateColumns:'repeat(9, 1fr)'}}>
+          <div className="board-wrap">
+            <div className="board board-fixed" role="grid">
               {boardState.map((row, r) => row.map((cell, c) => {
                 const bg = board.colors[board.grid[r][c] % board.colors.length] + '40';
                 const isWrong = wrongCell?.row === r && wrongCell?.col === c;
                 return <CellMemo key={`${r}-${c}`} cell={cell} bg={bg} isWrong={isWrong} skin={state.catSkin} onClick={()=>onCell(r,c)} />;
               }))}
             </div>
-
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 4px',fontSize:13,color:'#6b7280'}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'4px 6px',fontSize:13,color:'#6b7280'}}>
               <span>Level {level}</span>
               <span>Cats: {boardState.flat().filter(x=>x==='cat').length}/9</span>
             </div>
-
             <div style={{display:'flex',gap:8,paddingTop:8}}>
               <button className="btn btn-secondary" onClick={restart} style={{flex:1}}>Restart</button>
               <button className="btn btn-secondary" onClick={tap(backToMenu)} style={{flex:1}}>Menu</button>
