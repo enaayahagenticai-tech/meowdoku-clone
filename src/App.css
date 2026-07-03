@@ -1,7 +1,7 @@
-/* Meowdoku Clone — Elide web game: exact cell sizing, typography, motion */
+/* Meowdoku Clone — Elide web game polish pass */
 
 :root {
-  --ink: #1f1337;
+  --ink: #170f2b;
   --muted: #6b5e85;
   --bg-1: #fff;
   --bg-2: #fdf6ff;
@@ -10,7 +10,7 @@
   --brand-3: #ec4899;
   --ok: #16a34a;
   --warn: #dc2626;
-  --shadow: 0 10px 30px rgba(20, 10, 40, 0.12);
+  --shadow: 0 12px 32px rgba(20, 10, 40, 0.14);
   --radius: 18px;
   --transition: 220ms cubic-bezier(.2,.8,.2,1);
 }
@@ -18,22 +18,34 @@
 html, body {
   height: 100%;
   background:
-    radial-gradient(circle at 15% 10%, rgba(168,85,247,.15), transparent 40%),
-    radial-gradient(circle at 85% 90%, rgba(236,72,153,.15), transparent 40%),
+    radial-gradient(circle at 14% 10%, rgba(168,85,247,.18), transparent 42%),
+    radial-gradient(circle at 86% 90%, rgba(236,72,153,.18), transparent 42%),
     linear-gradient(135deg,#fff 0%,#fdf6ff 100%);
   color: var(--ink);
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .screen {
   max-width: 520px;
   margin: 0 auto;
-  padding: 22px 18px 34px;
+  padding: 24px 16px 44px;
   height: 100dvh;
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
+
+/* Typography scale */
+.display {
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+}
+.h1 { font-size: clamp(30px, 8vw, 38px); }
+.h2 { font-size: clamp(22px, 6vw, 28px); }
+.h3 { font-size: clamp(16px, 4.5vw, 20px); }
 
 /* Coach */
 .coach {
@@ -41,20 +53,17 @@ html, body {
   grid-template-columns: 22px 1fr;
   gap: 10px;
   align-items: center;
-  padding: 12px 14px;
+  padding: 14px 16px;
   border-radius: 14px;
   background: linear-gradient(180deg,#fbf5ff,#fff);
-  border: 1px solid rgba(147,51,234,0.15);
-  color: #4c1d95;
-  font-size: 13px;
-  font-weight: 700;
-  box-shadow: 0 6px 18px rgba(147,51,234,0.08);
+  border: 1px solid rgba(147,51,234,0.14);
+  color: #3b154f;
+  font-size: clamp(12px, 3.2vw, 14px);
+  font-weight: 800;
+  box-shadow: 0 10px 20px rgba(147,51,234,0.07);
 }
 .coach-menu::before { content: 'Tip: tap a cell twice to place or remove a cat'; }
 .coach-play::before { content: 'Double tap to place cats. Fill every region with 9 cats.'; }
-
-/* Typography */
-.display { font-weight: 800; letter-spacing: -0.02em; line-height: 1.05; }
 
 /* Buttons */
 .btn {
@@ -62,17 +71,18 @@ html, body {
   border: none;
   border-radius: 14px;
   padding: 12px 16px;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
   transition: transform var(--transition), box-shadow var(--transition), filter var(--transition);
+  letter-spacing: 0.01em;
 }
 .btn-primary {
   color: white;
   background: linear-gradient(180deg,var(--brand-2),var(--brand-1));
-  box-shadow: 0 10px 20px rgba(124,58,237,0.28);
+  box-shadow: 0 10px 22px rgba(124,58,237,0.32);
 }
 .btn-primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
-.btn-primary:active { transform: translateY(1px); box-shadow: 0 8px 14px rgba(124,58,237,0.28); }
+.btn-primary:active { transform: translateY(1px); box-shadow: 0 8px 14px rgba(124,58,237,0.32); }
 .btn-secondary {
   color: var(--brand-1);
   background: white;
@@ -82,19 +92,23 @@ html, body {
 .btn-secondary:hover { background:#fbf5ff; transform: translateY(-1px); }
 .btn-secondary:active { background:#f3e8ff; transform: translateY(1px); }
 
-/* Levels */
+/* Menu actions */
+.menu-actions { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.menu-actions .btn { padding: 14px 16px; font-size: clamp(14px, 4vw, 16px); }
+
+/* Levels grid */
 .level-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
 .level-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1px;
+  gap: 2px;
   flex-direction: column;
   border-radius: 14px;
   background: white;
   color: var(--brand-1);
-  font-weight: 800;
-  font-size: 18px;
+  font-weight: 900;
+  font-size: clamp(15px, 4.2vw, 18px);
   box-shadow: 0 1px 4px rgba(0,0,0,0.05);
   cursor: pointer;
   transition: transform var(--transition), box-shadow var(--transition);
@@ -105,14 +119,14 @@ html, body {
 .level-btn.level-current { box-shadow: 0 0 0 2px var(--brand-2); animation: currentPulse 1.8s ease-in-out infinite; }
 .level-btn.level-current.recently-unlocked { animation: unlockReveal .9s ease both; }
 
-/* Board + fixed square sizing */
+/* Board — stable square cells */
 .board-wrap {
   background: white;
   border-radius: 18px;
   padding: 10px;
   box-shadow:
     0 1px 0 rgba(0,0,0,0.04),
-    0 12px 28px rgba(0,0,0,0.08);
+    0 14px 32px rgba(0,0,0,0.10);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -127,8 +141,8 @@ html, body {
   background:
     linear-gradient(rgba(168,85,247,0.12) 1px, transparent 1px),
     linear-gradient(90deg, rgba(168,85,247,0.12) 1px, transparent 1px),
-    radial-gradient(circle at 20% 20%, rgba(244,114,182,0.12), transparent 35%),
-    radial-gradient(circle at 80% 80%, rgba(59,130,246,0.12), transparent 35%),
+    radial-gradient(circle at 20% 20%, rgba(244,114,182,0.14), transparent 35%),
+    radial-gradient(circle at 80% 80%, rgba(59,130,246,0.14), transparent 35%),
     white;
   background-size: 12.5% 12.5%, 12.5% 12.5%, 100% 100%, 100% 100%, 100% 100%;
 }
@@ -145,19 +159,19 @@ html, body {
   justify-content: center;
   background: white;
   cursor: pointer;
-  font-size: min(5.2vw, 26px);
+  font-size: min(5.4vw, 27px);
   user-select: none;
   transition: background-color 160ms ease, box-shadow 180ms ease;
 }
-.cell:hover { box-shadow: inset 0 0 0 2px rgba(168, 85, 247, 0.35); }
+.cell:hover { box-shadow: inset 0 0 0 2px rgba(168, 85, 247, 0.38); }
 .cell:active { transform: scale(1); background: rgba(168,85,247,0.06); }
 
 @keyframes cellPop {
   from { transform: scale(0.4); opacity: 0; }
-  60%  { transform: scale(1.12); opacity: 1; }
+  60%  { transform: scale(1.14); opacity: 1; }
   to   { transform: scale(1); }
 }
-@keyframes cellMark { from { transform: scale(0.5) rotate(-15deg); opacity: 0; } to { transform: scale(1) rotate(0); opacity: 1; } }
+@keyframes cellMark { from { transform: scale(0.55) rotate(-15deg); opacity: 0; } to { transform: scale(1) rotate(0); opacity: 1; } }
 @keyframes cellFade { from { transform: scale(1.04); opacity: 0.5; } to { transform: scale(1); opacity: 1; } }
 @keyframes shake {
   10%,90% { transform: translateX(-1px); }
@@ -165,16 +179,31 @@ html, body {
   30%,50%,70% { transform: translateX(-3px); }
   40%,60% { transform: translateX(3px); }
 }
+@keyframes ripple {
+  from { transform: scale(0.8); opacity: 0.6; }
+  to   { transform: scale(2.2); opacity: 0; }
+}
+
 .cell-cat   { animation: cellPop .22s ease; }
 .cell-xmark { animation: cellMark .15s ease; }
 .cell-empty { animation: cellFade .15s ease; }
 .cell-wrong { animation: shake .4s ease; background-color: rgba(220,38,38,0.20) !important; }
+.cell-ripple { position: relative; overflow: hidden; }
+.cell-ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(168, 85, 247, 0.32);
+  animation: ripple .45s ease-out forwards;
+  pointer-events: none;
+}
 
 /* Hearts */
 .heart { font-size: 22px; transition: transform 180ms ease, opacity 180ms ease; display: inline-block; }
 .heart.lost { opacity: 0.18; transform: scale(0.85); }
 
-/* Hint */
+/* Hint banner */
 .hint-banner {
   display: flex;
   align-items: center;
@@ -185,8 +214,8 @@ html, body {
   border: 1px solid rgba(168,85,247,0.25);
   background: linear-gradient(180deg,#faf5ff,#f3e8ff);
   color: #6b21a8;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: clamp(11px, 3.2vw, 12px);
+  font-weight: 800;
   text-align: left;
   cursor: pointer;
   box-shadow: 0 2px 10px rgba(147,51,234,0.10);
@@ -198,10 +227,10 @@ html, body {
 @keyframes hintGlow { 0%,100% { box-shadow: 0 2px 10px rgba(147,51,234,0.10); } 50% { box-shadow: 0 2px 18px rgba(147,51,234,0.28); } }
 @keyframes hintNudge { 0%,100% { transform: translateY(0); } 40% { transform: translateY(3px); } }
 
-/* Win */
+/* Win / Game Over */
 .win-overlay {
   position: fixed; inset: 0; z-index: 50;
-  background: rgba(20, 10, 40, 0.35);
+  background: rgba(20, 10, 40, 0.36);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   display: flex; align-items: center; justify-content: center;
@@ -213,26 +242,25 @@ html, body {
   background: white; border-radius: 22px; padding: 28px 22px 24px;
   box-shadow: 0 28px 60px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.05);
 }
-.win-emoji { font-size: 72px; margin-bottom: 14px; display: inline-block; animation: starPop .5s cubic-bezier(.34,1.56,.64,1) both; }
-.win-title { font-weight: 800; font-size: 22px; letter-spacing: -0.02em; margin-bottom: 6px; animation: revealUp .35s ease both; }
-.win-stars { animation: revealUp .4s ease .12s both; }
-.win-body { color: var(--muted); margin-top: 6px; font-size: 14px; animation: revealUp .4s ease .2s both; }
+.win-emoji { font-size: clamp(56px, 15vw, 72px); margin-bottom: 14px; display: inline-block; animation: starPop .5s cubic-bezier(.34,1.56,.64,1) both; }
+.win-title { font-weight: 800; font-size: clamp(20px, 6vw, 26px); letter-spacing: -0.02em; margin-bottom: 6px; animation: revealUp .35s ease both; }
 .win-stars { display: flex; gap: 6px; justify-content: center; margin-bottom: 16px; }
-.win-star { display: inline-block; font-size: 30px; animation: starPop .45s cubic-bezier(.34,1.56,.64,1) both; }
+.win-star { display: inline-block; font-size: clamp(24px, 7vw, 32px); animation: starPop .45s cubic-bezier(.34,1.56,.64,1) both; }
 .win-star:nth-child(2) { animation-delay: .15s; }
 .win-star:nth-child(3) { animation-delay: .3s; }
-.win-cta { margin-top: 16px; display: flex; gap: 10px; }
+.win-body { color: var(--muted); margin-top: 8px; font-size: clamp(13px, 3.8vw, 15px); animation: revealUp .4s ease .2s both; }
+.win-cta { margin-top: 18px; display: flex; gap: 10px; }
 .win-cta .btn { flex: 1; padding: 14px; }
 
 .unlock-banner {
   display: inline-flex; margin: 0 auto 14px; padding: 8px 16px; border-radius: 999px;
-  background: linear-gradient(180deg,#fef3c7,#fde68a); color: #7c4a03; font-weight: 800; font-size: 13px;
+  background: linear-gradient(180deg,#fef3c7,#fde68a); color: #5f3a00; font-weight: 800; font-size: clamp(12px, 3.6vw, 14px);
   box-shadow: 0 2px 12px rgba(245,158,11,0.25); animation: unlockPop .45s cubic-bezier(.34,1.56,.64,1) both;
 }
 
 /* Game Over */
 .gameover-card { animation: gameoverDrop .55s cubic-bezier(.34,1.4,.64,1) both; }
-.gameover-emoji { font-size: 72px; margin-bottom: 14px; display: inline-block; animation: gameoverShake .6s ease .3s both, sadFloat 2.4s ease-in-out .9s infinite; }
+.gameover-emoji { font-size: clamp(56px, 15vw, 72px); margin-bottom: 14px; display: inline-block; animation: gameoverShake .6s ease .3s both, sadFloat 2.4s ease-in-out .9s infinite; }
 .gameover-reveal { animation: revealUp .4s ease both; }
 .gameover-reveal-1 { animation-delay: .55s; }
 .gameover-reveal-2 { animation-delay: .7s; }
@@ -242,16 +270,16 @@ html, body {
 .insight-card {
   background: linear-gradient(135deg, var(--brand-1), var(--brand-3));
   color: white; border-radius: var(--radius); padding: 18px; margin-bottom: 12px;
-  box-shadow: 0 12px 24px rgba(168,85,247,0.28); animation: revealUp .4s ease both;
+  box-shadow: 0 14px 26px rgba(168,85,247,0.32); animation: revealUp .4s ease both;
 }
-.insight-msg { font-weight: 800; font-size: 14px; margin-bottom: 10px; }
-.insight-sub { font-size: 12px; font-weight: 600; opacity: .9; margin-top: 6px; }
-.progress-track { height: 8px; border-radius: 999px; background: rgba(255,255,255,0.35); overflow: hidden; }
+.insight-msg { font-weight: 800; font-size: clamp(13px, 3.8vw, 15px); margin-bottom: 10px; }
+.insight-sub { font-size: clamp(11px, 3.2vw, 13px); font-weight: 700; opacity: .92; margin-top: 6px; }
+.progress-track { height: 8px; border-radius: 999px; background: rgba(255,255,255,0.32); overflow: hidden; }
 .progress-fill { height: 100%; border-radius: 999px; background: white; transition: width .6s cubic-bezier(.34,1.2,.64,1); box-shadow: 0 0 10px rgba(255,255,255,0.7); animation: progressGrow .8s ease both; }
 
 .screen--static { animation: none !important; }
 
-/* Animations */
+/* Keyframes */
 @keyframes currentPulse {
   0%,100% { box-shadow: 0 0 0 2px var(--brand-2), 0 0 0 8px rgba(168,85,247,0.14); }
   50%     { box-shadow: 0 0 0 2px var(--brand-2), 0 0 0 14px rgba(168,85,247,0.05); }
